@@ -91,7 +91,7 @@ def default_argument_parser(epilog=None):
     """
     parser = argparse.ArgumentParser(
         epilog=epilog
-        or f"""
+               or f"""
 Examples:
 
 Run on single machine:
@@ -111,11 +111,22 @@ Run on multiple machines:
         "--resume",
         action="store_true",
         help="Whether to attempt to resume from the checkpoint directory. "
-        "See documentation of `DefaultTrainer.resume_or_load()` for what it means.",
+             "See documentation of `DefaultTrainer.resume_or_load()` for what it means.",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
     parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
+
+    # TODO fix help for new arguments below
+    parser.add_argument("--batch-size", type=int, default=4, help="total number of machines")
+    parser.add_argument("--num-workers", type=int, default=4, help="total number of machines")
+    parser.add_argument("--max-iter", type=int, default=20000, help="total number of machines")
+    parser.add_argument("--learning-rate", type=float, default=0.02, help="total number of machines")
+    parser.add_argument("--checkpoint-period", type=int, default=5000, help="total number of machines")
+    parser.add_argument("--root-dir", type=str, default='/root/data/', help="total number of machines")
+    parser.add_argument("--output-dir", type=str, default='/root/output/', help="total number of machines")
+    parser.add_argument("--experiment-name", type=str, default='experiment_0', help="total number of machines")
+
     parser.add_argument(
         "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
@@ -128,7 +139,7 @@ Run on multiple machines:
         "--dist-url",
         default="tcp://127.0.0.1:{}".format(port),
         help="initialization URL for pytorch distributed backend. See "
-        "https://pytorch.org/docs/stable/distributed.html for details.",
+             "https://pytorch.org/docs/stable/distributed.html for details.",
     )
     parser.add_argument(
         "opts",
@@ -679,7 +690,7 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
         cfg.defrost()
 
         assert (
-            cfg.SOLVER.IMS_PER_BATCH % old_world_size == 0
+                cfg.SOLVER.IMS_PER_BATCH % old_world_size == 0
         ), "Invalid REFERENCE_WORLD_SIZE in config!"
         scale = num_workers / old_world_size
         bs = cfg.SOLVER.IMS_PER_BATCH = int(round(cfg.SOLVER.IMS_PER_BATCH * scale))
