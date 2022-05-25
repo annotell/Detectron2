@@ -27,7 +27,7 @@ from torch.nn.parallel import DistributedDataParallel
 from detectron2 import model_zoo
 import copy
 from cv2 import cv2
-
+import numpy as np
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 import detectron2.utils.comm as comm
@@ -66,8 +66,7 @@ cls_to_index = {"Car": 0, "TwoWheeler": 1, "HeavyDuty": 2, "Pedestrian": 3, "Unc
 def get_dataset_dict(root_dir, d):
     with open(os.path.join(root_dir, f'{d}.pickle'), 'rb') as f:
         dataset_dicts = pickle.load(f)
-
-    for record in enumerate(dataset_dicts):
+    for record in dataset_dicts:
         record["file_name"] = os.path.join(root_dir, record["file_name"])
         record["to_mask"] = []
         temp_annotations = []
@@ -83,7 +82,8 @@ def get_dataset_dict(root_dir, d):
 def mask_not_relevant_objects(image, data_to_mask):
     for data_point in data_to_mask:
         box = data_point['bbox']
-        image = cv2.rectangle(image, (box[2], box[3]), (box[0], box[1]), (0, 0, 0), -1)
+        image = cv2.rectangle(np.array(image), (box[2], box[3]), (box[0], box[1]), (0, 0, 0), -1)
+
     return image
 
 
@@ -244,8 +244,8 @@ def setup(args):
     """
     cfg = get_cfg()
     cfg.merge_from_list(args.opts)
-    cfg.merge_from_file(model_zoo.get_config_file("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml"))
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml")
+    cfg.merge_from_file(model_zoo.get_config_file(args.model_type))
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(args.model_type)
     cfg.MODEL.MASK_ON = False
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 4
     cfg.DATASETS.TRAIN = ("dataset_training",)
@@ -255,7 +255,7 @@ def setup(args):
     cfg.SOLVER.CHECKPOINT_PERIOD = args.checkpoint_period
     cfg.SOLVER.IMS_PER_BATCH = args.batch_size
     cfg.SOLVER.MAX_ITER = args.max_iter
-    cfg.SOLVER.STEPS = (40000, 50000)
+    cfg.SOLVER.STEPS = (int(args.max_iter*4/6), int(args.max_iter*5/6))
     cfg.DATALOADER.NUM_WORKERS = args.num_workers
     cfg.SOLVER.BASE_LR = args.learning_rate
 

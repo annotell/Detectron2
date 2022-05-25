@@ -117,16 +117,16 @@ Run on multiple machines:
     parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
     parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
 
-    # TODO fix help for new arguments below
-    parser.add_argument("--batch-size", type=int, default=4, help="total number of machines")
-    parser.add_argument("--num-workers", type=int, default=4, help="total number of machines")
-    parser.add_argument("--max-iter", type=int, default=20000, help="total number of machines")
-    parser.add_argument("--learning-rate", type=float, default=0.02, help="total number of machines")
-    parser.add_argument("--checkpoint-period", type=int, default=5000, help="total number of machines")
-    parser.add_argument("--root-dir", type=str, default='/root/data/', help="total number of machines")
-    parser.add_argument("--output-dir", type=str, default='/root/output/', help="total number of machines")
-    parser.add_argument("--experiment-name", type=str, default='experiment_0', help="total number of machines")
-
+    parser.add_argument("--batch-size", type=int, default=4, help="batch size")
+    parser.add_argument("--num-workers", type=int, default=4, help="numer of workers data loader")
+    parser.add_argument("--max-iter", type=int, default=20000, help="training iterations")
+    parser.add_argument("--learning-rate", type=float, default=0.02, help="learning rate")
+    parser.add_argument("--checkpoint-period", type=int, default=5000, help="how often save model")
+    parser.add_argument("--root-dir", type=str, default='/root/data/', help="dataset directory")
+    parser.add_argument("--output-dir", type=str, default='/root/output/', help="output directory")
+    parser.add_argument("--experiment-name", type=str, default='experiment_0', help="experiment name")
+    parser.add_argument("--model-type", type=str, default='Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml',
+                        help="link to yaml file defining model type")
     parser.add_argument(
         "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
