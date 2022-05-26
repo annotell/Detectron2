@@ -288,7 +288,7 @@ class CascadeROIHeads(StandardROIHeads):
         boxes = [Boxes(b.detach()) for b in boxes]
         proposals = []
         for boxes_per_image, image_size in zip(boxes, image_sizes):
-            boxes_per_image.clip(image_size)
+            # boxes_per_image.clip(image_size)
             if self.training:
                 # do not filter empty boxes at inference time,
                 # because the scores from each stage need to be aligned and added later

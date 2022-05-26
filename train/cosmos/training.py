@@ -92,13 +92,14 @@ def mapper_camera_training(dataset_dict):
     image = utils.read_image(dataset_dict["file_name"], format="BGR")
     image = mask_not_relevant_objects(image, dataset_dict["to_mask"])
 
-    augment_list = [T.RandomFlip(prob=0.20, horizontal=True, vertical=False),
-                    T.RandomApply(T.RandomBrightness(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-                    T.RandomApply(T.RandomContrast(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-                    T.RandomApply(T.RandomSaturation(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-                    T.RandomApply(T.RandomLighting(scale=0.1), prob=0.20),
+    shorts = (800, 832, 864, 896, 928, 960, 992, 1024, 1080, 1120, 1200, 1280, 1360, 1512, 1590, 1680)
+    max_size = 3000
+    augment_list = [T.RandomFlip(prob=0.5, horizontal=True, vertical=False),
+                    T.RandomApply(T.RandomBrightness(intensity_min=0.8, intensity_max=1.2), prob=0.20),
+                    T.RandomApply(T.RandomContrast(intensity_min=0.8, intensity_max=1.2), prob=0.20),
+                    T.RandomApply(T.RandomSaturation(intensity_min=0.8, intensity_max=1.2), prob=0.20),
                     T.RandomCrop(crop_type="relative_range", crop_size=[0.6, 0.6]),
-                    T.RandomCrop(crop_type="absolute", crop_size=[1024, 1024])]
+                    T.ResizeShortestEdge(shorts, max_size=max_size, sample_style="choice", interp=2)]
 
     image, transforms = T.apply_transform_gens(augment_list, image)
     dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
@@ -255,7 +256,7 @@ def setup(args):
     cfg.SOLVER.CHECKPOINT_PERIOD = args.checkpoint_period
     cfg.SOLVER.IMS_PER_BATCH = args.batch_size
     cfg.SOLVER.MAX_ITER = args.max_iter
-    cfg.SOLVER.STEPS = (int(args.max_iter*4/6), int(args.max_iter*5/6))
+    cfg.SOLVER.STEPS = (int(args.max_iter * 4 / 6), int(args.max_iter * 5 / 6))
     cfg.DATALOADER.NUM_WORKERS = args.num_workers
     cfg.SOLVER.BASE_LR = args.learning_rate
 

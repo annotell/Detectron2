@@ -243,7 +243,7 @@ def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk,
             dataset_dict.pop("proposal_objectness_logits").astype("float32")
         )
 
-        boxes.clip(image_shape)
+        # boxes.clip(image_shape)
         keep = boxes.nonempty(threshold=min_box_size)
         boxes = boxes[keep]
         objectness_logits = objectness_logits[keep]
@@ -255,7 +255,7 @@ def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk,
 
 
 def transform_instance_annotations(
-    annotation, transforms, image_size, *, keypoint_hflip_indices=None
+        annotation, transforms, image_size, *, keypoint_hflip_indices=None
 ):
     """
     Apply transforms to box, segmentation and keypoints annotations of a single instance.
@@ -283,8 +283,21 @@ def transform_instance_annotations(
     # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
     # clip transformed bbox to image size
-    bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
-    annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
+    # bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
+    # annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
+    bbox = transforms.apply_box(np.array([bbox]))[0]
+
+    x0, y0, x1, y1 = bbox[0], bbox[1], bbox[2], bbox[3]
+    if x0 < 0 and x1 < 0:
+        x0, y0, x1, y1 = 0, 0, 0, 0
+    if x0 > image_size[1] and x1 > image_size[1]:
+        x0, y0, x1, y1 = 0, 0, 0, 0
+    if y0 < 0 and y1 < 0:
+        x0, y0, x1, y1 = 0, 0, 0, 0
+    if y0 > image_size[0] and y1 > image_size[0]:
+        x0, y0, x1, y1 = 0, 0, 0, 0
+
+    annotation["bbox"] = np.array([x0, y0, x1, y1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
     if "segmentation" in annotation:
@@ -461,7 +474,7 @@ def annotations_to_instances_rotated(annos, image_size):
     boxes = [obj["bbox"] for obj in annos]
     target = Instances(image_size)
     boxes = target.gt_boxes = RotatedBoxes(boxes)
-    boxes.clip(image_size)
+    # boxes.clip(image_size)
 
     classes = [obj["category_id"] for obj in annos]
     classes = torch.tensor(classes, dtype=torch.int64)
@@ -471,7 +484,7 @@ def annotations_to_instances_rotated(annos, image_size):
 
 
 def filter_empty_instances(
-    instances, by_box=True, by_mask=True, box_threshold=1e-5, return_mask=False
+        instances, by_box=True, by_mask=True, box_threshold=1e-5, return_mask=False
 ):
     """
     Filter out empty instances in an `Instances` object.
@@ -569,10 +582,10 @@ def gen_crop_transform_with_instance(crop_size, image_size, instance):
     bbox = BoxMode.convert(instance["bbox"], instance["bbox_mode"], BoxMode.XYXY_ABS)
     center_yx = (bbox[1] + bbox[3]) * 0.5, (bbox[0] + bbox[2]) * 0.5
     assert (
-        image_size[0] >= center_yx[0] and image_size[1] >= center_yx[1]
+            image_size[0] >= center_yx[0] and image_size[1] >= center_yx[1]
     ), "The annotation bounding box is outside of the image!"
     assert (
-        image_size[0] >= crop_size[0] and image_size[1] >= crop_size[1]
+            image_size[0] >= crop_size[0] and image_size[1] >= crop_size[1]
     ), "Crop size is larger than image size!"
 
     min_yx = np.maximum(np.floor(center_yx).astype(np.int32) - crop_size, 0)

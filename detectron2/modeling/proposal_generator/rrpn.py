@@ -103,7 +103,7 @@ def find_top_rrpn_proposals(
             boxes = boxes[valid_mask]
             scores_per_img = scores_per_img[valid_mask]
             lvl = lvl[valid_mask]
-        boxes.clip(image_size)
+        # boxes.clip(image_size)
 
         # filter empty boxes
         keep = boxes.nonempty(threshold=min_box_size)

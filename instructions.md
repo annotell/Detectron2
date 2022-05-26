@@ -1,3 +1,6 @@
+### to train multi-gpu
+python -B training.py --num-gpus X
+
 ###Using docker - recommended 
 Assuming CUDA is version 11.3 and installs pytorch 1.10.
 Before building the docker image make sure that /etc/docker/daemon.json allows
@@ -20,7 +23,7 @@ Steps:
 2. Build image with:  docker build -t detectron2-docker -f detectron2/docker/Dockerfile .
 3. If building image for GCR repo, run instead: docker build -t eu.gcr.io/annotell-com/detectron2:TAGNAME -f detectron2/docker/Dockerfile .
 4. To push to GCR repo, run: docker push eu.gcr.io/annotell-com/detectron2:TAGNAME
-5. docker run -p 8888:8888 --hostname localhost -it -d --gpus all  -v /path/to/dataset/:/data -v /path/to/output/folder/:/root/output/ detectron2-docker:latest 
+5. docker run -p 8889:8889 --hostname localhost -it -d --gpus all  -v /mnt/bfd/luca/cosmos_data_2dod/:/root/data -v /mnt/bfd/luca/cosmos_data_2dod/output/:/root/output/ --ipc=host detectron2-docker 
 6. docker exec -it container_id bash
 
 
