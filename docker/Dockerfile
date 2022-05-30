@@ -40,9 +40,7 @@ RUN pip install --user torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio=
 RUN PIP_INSTALL="python -m pip --no-cache-dir install" && \
     $PIP_INSTALL tensorboardX easydict pyyaml scikit-image tqdm SharedArray six
 
-RUN pip install --user setuptools==59.5.0
-
-RUN pip install --user opencv-python
+RUN pip install --user setuptools==59.5.0 opencv-python
 
 RUN apt-get install libgl1 -y
 
@@ -50,7 +48,7 @@ WORKDIR /root
 
 RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
 
-COPY detectron2 /root/detectron2
+COPY ../detectron2 /root/detectron2
 
 # set FORCE_CUDA because during `docker build` cuda is not accessible
 ENV FORCE_CUDA="1"
