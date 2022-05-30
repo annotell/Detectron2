@@ -48,7 +48,7 @@ WORKDIR /root
 
 RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
 
-COPY ../detectron2 /root/detectron2
+COPY detectron2 /root/detectron2
 
 # set FORCE_CUDA because during `docker build` cuda is not accessible
 ENV FORCE_CUDA="1"

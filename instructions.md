@@ -20,12 +20,11 @@ update it and run: sudo systemctl restart docker
 Steps:
 
 1. Clone repo: git clone git@github.com:annotell/Detectron2.git detectron2
-2. cd detectron2
-3. Build image with:  docker build -t detectron2-docker -f docker/Dockerfile .
-4. If building image for GCR repo, run instead: docker build -t eu.gcr.io/annotell-com/detectron2:TAGNAME -f docker/Dockerfile .
-5. To push to GCR repo, run: docker push eu.gcr.io/annotell-com/detectron2:TAGNAME
-6. docker run -p 8889:8889 --hostname localhost -it -d --gpus all  -v /mnt/bfd/luca/cosmos_data_2dod/:/root/data -v /mnt/bfd/luca/cosmos_data_2dod/output/:/root/output/ --ipc=host detectron2-docker 
-7. docker exec -it container_id bash
+2. Build image with:  docker build -t detectron2-docker -f detectron2/docker/Dockerfile .
+3. If building image for GCR repo, run instead: docker build -t eu.gcr.io/annotell-com/detectron2:TAGNAME -f detectron2/docker/Dockerfile .
+4. To push to GCR repo, run: docker push eu.gcr.io/annotell-com/detectron2:TAGNAME
+5. docker run -p 8889:8889 --hostname localhost -it -d --gpus all  -v /mnt/bfd/luca/cosmos_data_2dod/:/root/data -v /mnt/bfd/luca/cosmos_data_2dod/output/:/root/output/ --ipc=host detectron2-docker 
+6. docker exec -it container_id bash
 
 
 /path/to/output/folder/ is where detectron2 will save logs and models outside the docker image
