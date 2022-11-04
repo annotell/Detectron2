@@ -40,7 +40,7 @@ RUN pip install --user torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio=
 RUN PIP_INSTALL="python -m pip --no-cache-dir install" && \
     $PIP_INSTALL tensorboardX easydict pyyaml scikit-image tqdm SharedArray six
 
-RUN pip install --user setuptools==59.5.0 opencv-python
+RUN pip install --user setuptools==59.5.0 opencv-python==4.5.5.64
 
 RUN apt-get install libgl1 -y
 
