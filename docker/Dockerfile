@@ -1,52 +1,16 @@
-FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-# Install basics
-RUN apt-get update -y \
-    && apt-get install build-essential \
-    && apt-get install -y apt-utils git curl ca-certificates bzip2 tree htop wget \
-    && apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender-dev bmon iotop g++ python3.8 python3.8-dev python3.8-distutils \
-    && apt-get install -y nano
+RUN apt-get update && apt-get install -y python3-opencv ca-certificates python3.10 python3-pip git wget sudo ninja-build
+RUN ln -sv /usr/bin/python3.10 /usr/bin/python
 
-# Install cmake v3.13.2
-RUN apt-get purge -y cmake && \
-    mkdir /root/temp && \
-    cd /root/temp && \
-    wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz && \
-    tar -xzvf cmake-3.13.2.tar.gz && \
-    cd cmake-3.13.2 && \
-    bash ./bootstrap && \
-    make && \
-    make install && \
-    cmake --version && \
-    rm -rf /root/temp
+RUN pip install tensorboard cmake onnx
+RUN pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 -f https://download.pytorch.org/whl/cu117/torch_stable.html
 
-# Install python
-RUN ln -sv /usr/bin/python3.8 /usr/bin/python
-RUN wget https://bootstrap.pypa.io/get-pip.py && \
-	python get-pip.py && \
-	rm get-pip.py
-
-# Install python packages
-RUN PIP_INSTALL="python -m pip --no-cache-dir install" && \
-    $PIP_INSTALL numpy==1.20 llvmlite numba
-
-# Install torch and torchvision
-# See https://pytorch.org/ for other options if you use a different version of CUDA
-RUN pip install --user torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
-
-# Install python packages
-RUN PIP_INSTALL="python -m pip --no-cache-dir install" && \
-    $PIP_INSTALL tensorboardX easydict pyyaml scikit-image tqdm SharedArray six
-
-RUN pip install --user setuptools==59.5.0 opencv-python==4.5.5.64
-
-RUN apt-get install libgl1 -y
+RUN pip install 'git+https://github.com/facebookresearch/fvcore'
 
 WORKDIR /root
-
-RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
 
 COPY detectron2 /root/detectron2
 
