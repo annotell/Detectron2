@@ -18,8 +18,7 @@ from detectron2.modeling.layers_dino import PatchEmbed
 
 import logging
 import math
-from functools import partial
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable
 
 from .backbone import Backbone
 
@@ -27,6 +26,14 @@ logger = logging.getLogger("dinov2")
 
 
 __all__ = ["DinoVisionTransformer"]
+
+
+def init_weights_vit_timm(module: nn.Module, name: str = ""):
+    """ViT weight initialization, original timm impl (for reproducibility)"""
+    if isinstance(module, nn.Linear):
+        trunc_normal_(module.weight, std=0.02)
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)
 
 
 def named_apply(
@@ -149,11 +156,6 @@ class DinoVisionTransformer(Backbone):
                 ffn_layer=Mlp,
                 init_values=init_values,
             )
-            if use_act_checkpoint:
-                # TODO: use torch.utils.checkpoint
-                from fairscale.nn.checkpoint import checkpoint_wrapper
-
-                block = checkpoint_wrapper(block)
             self.blocks.append(block)
 
         self.norm = norm_layer(embed_dim)
@@ -165,19 +167,12 @@ class DinoVisionTransformer(Backbone):
         if self.pos_embed is not None:
             nn.init.trunc_normal_(self.pos_embed, std=0.02)
 
-    #     self.init_weights()
+        self.init_weights()
 
-    # def init_weights(self):
-    #     trunc_normal_(self.pos_embed, std=0.02)
-    #     nn.init.normal_(self.cls_token, std=1e-6)
-    #     named_apply(self.init_weights_vit_timm, self)
-
-    # def init_weights_vit_timm(module: nn.Module, name: str = ""):
-    #     """ViT weight initialization, original timm impl (for reproducibility)"""
-    #     if isinstance(module, nn.Linear):
-    #         trunc_normal_(module.weight, std=0.02)
-    #         if module.bias is not None:
-    #             nn.init.zeros_(module.bias)
+    def init_weights(self):
+        trunc_normal_(self.pos_embed, std=0.02)
+        nn.init.normal_(self.cls_token, std=1e-6)
+        named_apply(init_weights_vit_timm, self)
 
     def interpolate_pos_encoding(self, x, w, h):
         previous_dtype = x.dtype
@@ -235,13 +230,11 @@ class DinoVisionTransformer(Backbone):
 
         all_x = x
         output = []
-        for x, masks in zip(all_x, masks_list):
-            x_norm = self.norm(x)
+        for x, _ in zip(all_x, masks_list):
             output.append(x)
         return output
 
     def forward(self, x, masks=None):
-        print(x.shape)
         if isinstance(x, list):
             return self.forward_features_list(x, masks)
 
