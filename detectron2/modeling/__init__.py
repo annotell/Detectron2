@@ -13,6 +13,7 @@ from .backbone import (
     make_stage,
     ViT,
     SimpleFeaturePyramid,
+    DinoVisionTransformer,
     get_vit_lr_decay_rate,
     MViT,
     SwinTransformer,
