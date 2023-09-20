@@ -4,12 +4,12 @@ from detectron2.config import LazyCall as L
 from detectron2.modeling import SimpleFeaturePyramid, DinoVisionTransformer
 from detectron2.modeling.backbone.fpn import LastLevelMaxPool
 
-from .mask_rcnn_fpn import model
+from .rcnn_fpn import model
 from ..data.constants import constants
 
-model.pixel_mean = constants.imagenet_rgb256_mean
-model.pixel_std = constants.imagenet_rgb256_std
-model.input_format = "RGB"
+# model.pixel_mean = constants.imagenet_rgb256_mean
+# model.pixel_std = constants.imagenet_rgb256_std
+# model.input_format = "RGB"
 
 # Base
 embed_dim, depth, num_heads, dp = 768, 12, 12, 0.1
@@ -48,7 +48,7 @@ model.backbone = L(SimpleFeaturePyramid)(
     square_pad=518,
 )
 
-model.roi_heads.box_head.conv_norm = model.roi_heads.mask_head.conv_norm = "LN"
+model.roi_heads.box_head.conv_norm = "LN"
 
 # 2conv in RPN:
 model.proposal_generator.head.conv_dims = [-1, -1]

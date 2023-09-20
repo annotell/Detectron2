@@ -58,7 +58,7 @@ def mapper_camera_training(dataset_dict):
     dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
     image = utils.read_image(dataset_dict["file_name"], format="BGR")
     image = mask_not_relevant_objects(image, dataset_dict["to_mask"])
-    image_size = 1024
+    image_size = 518
     augment_list = [
         T.RandomFlip(prob=0.5, horizontal=True, vertical=False),
         T.RandomApply(
@@ -111,18 +111,18 @@ dataloader.train = L(build_detection_train_loader)(
 
 dataloader.train.dataset.root_dir = "../cosmos_data_2dod/"
 
-dataloader.test = L(build_detection_test_loader)(
-    dataset=L(get_detection_dataset_dicts)(names="coco_2017_val", filter_empty=False),
-    mapper=L(DatasetMapper)(
-        is_train=False,
-        augmentations=[
-            L(T.ResizeShortestEdge)(short_edge_length=800, max_size=1333),
-        ],
-        image_format="${...train.mapper.image_format}",
-    ),
-    num_workers=4,
-)
+# dataloader.test = L(build_detection_test_loader)(
+#     dataset=L(get_detection_dataset_dicts)(names="coco_2017_val", filter_empty=False),
+#     mapper=L(DatasetMapper)(
+#         is_train=False,
+#         augmentations=[
+#             L(T.ResizeShortestEdge)(short_edge_length=800, max_size=1333),
+#         ],
+#         image_format="${...train.mapper.image_format}",
+#     ),
+#     num_workers=4,
+# )
 
-dataloader.evaluator = L(COCOEvaluator)(
-    dataset_name="${..test.dataset.names}",
-)
+# dataloader.evaluator = L(COCOEvaluator)(
+#     dataset_name="${..test.dataset.names}",
+# )

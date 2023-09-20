@@ -7,22 +7,21 @@
 #   https://github.com/facebookresearch/dino/blob/main/vision_transformer.py
 #   https://github.com/rwightman/pytorch-image-models/tree/master/timm/models/vision_transformer.py
 
-from functools import partial
-import logging
-from typing import Callable, Union, Tuple, Sequence
-
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
 from torch.nn.init import trunc_normal_
-from .backbone import Backbone
 
-from detectron2.modeling.layers_dino import (
-    PatchEmbed,
-    Mlp,
-    MemEffAttention,
-    NestedTensorBlock as Block,
-)
+from detectron2.modeling.layers_dino import MemEffAttention, Mlp
+from detectron2.modeling.layers_dino import NestedTensorBlock as Block
+from detectron2.modeling.layers_dino import PatchEmbed
+
+import logging
+import math
+from functools import partial
+from typing import Callable, Sequence, Tuple, Union
+
+from .backbone import Backbone
 
 logger = logging.getLogger("dinov2")
 
