@@ -105,11 +105,13 @@ def mapper_camera_test(dataset_dict):
 dataloader.train = L(build_detection_train_loader)(
     dataset=L(get_dataset_dict)(root_dir="${..train.dataset.root_dir}", d="validation"),
     mapper=mapper_camera_training,
-    total_batch_size=2,
-    num_workers=4,
+    total_batch_size=6,
+    num_workers=6,
 )
 
 dataloader.train.dataset.root_dir = "../cosmos_data_2dod/"
+dataloader.train.max_iter = 200000
+dataloader.train.eval_period = 200000
 
 # dataloader.test = L(build_detection_test_loader)(
 #     dataset=L(get_detection_dataset_dicts)(names="coco_2017_val", filter_empty=False),
