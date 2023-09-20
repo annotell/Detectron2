@@ -7,11 +7,12 @@ import cv2
 import detectron2.data.transforms as T
 from detectron2.config import LazyCall as L
 from detectron2.data import (
-    DatasetMapper,
-    build_detection_test_loader,
     build_detection_train_loader,
-    get_detection_dataset_dicts,
 )
+from detectron2.data.build import (
+    print_instances_class_histogram,
+)
+
 from detectron2.evaluation import COCOEvaluator
 from detectron2.data import detection_utils as utils
 import torch
@@ -27,6 +28,8 @@ cls_to_index = {
     "Unclear": 4,
 }
 
+class_names = ["Car", "TwoWheeler", "HeavyDuty", "Pedestrian", "Unclear"]
+
 
 def get_dataset_dict(root_dir: str, d: str):
     with open(os.path.join(root_dir, f"{d}.pickle"), "rb") as f:
@@ -41,6 +44,8 @@ def get_dataset_dict(root_dir: str, d: str):
             else:
                 temp_annotations.append(obj)
         record["annotations"] = temp_annotations
+
+    print_instances_class_histogram(dataset_dicts, class_names)
     return dataset_dicts
 
 
