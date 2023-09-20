@@ -19,7 +19,8 @@ train.init_checkpoint = "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_ba
 
 # Schedule
 # 100 ep = 184375 iters * 64 images/iter / 118000 images/ep
-train.max_iter = 184375
+train.max_iter = 200000
+train.eval_period = 200000
 
 lr_multiplier = L(WarmupParamScheduler)(
     scheduler=L(MultiStepParamScheduler)(

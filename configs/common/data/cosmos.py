@@ -115,8 +115,6 @@ dataloader.train = L(build_detection_train_loader)(
 )
 
 dataloader.train.dataset.root_dir = "../cosmos_data_2dod/"
-dataloader.train.max_iter = 200000
-dataloader.train.eval_period = 200000
 
 # dataloader.test = L(build_detection_test_loader)(
 #     dataset=L(get_detection_dataset_dicts)(names="coco_2017_val", filter_empty=False),
