@@ -80,7 +80,7 @@ model = L(GeneralizedRCNN)(
             num_classes="${..num_classes}",
         ),
     ),
-    pixel_mean=constants.imagenet_bgr256_mean,
-    pixel_std=constants.imagenet_bgr256_std,
-    input_format="BGR",
+    pixel_mean=[255 * 0.485, 255 * 0.456, 255 * 0.406],
+    pixel_std=[255 * 0.229, 255 * 0.224, 255 * 0.225],
+    input_format="RBG",
 )
