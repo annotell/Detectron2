@@ -114,7 +114,7 @@ dataloader.train = L(build_detection_train_loader)(
     num_workers=6,
 )
 
-dataloader.train.dataset.root_dir = "/Users/caltaluc/Desktop/"
+dataloader.train.dataset.root_dir = "../cosmos_data_2dod/"
 
 # dataloader.test = L(build_detection_test_loader)(
 #     dataset=L(get_detection_dataset_dicts)(names="coco_2017_val", filter_empty=False),
