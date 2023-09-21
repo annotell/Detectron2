@@ -86,7 +86,6 @@ class DinoVisionTransformer(Backbone):
         use_rel_pos=False,
         rel_pos_zero_init=True,
         window_size=0,
-        window_block_indexes=(),
         residual_block_indexes=(),
         use_act_checkpoint=False,
         pretrain_img_size=518,

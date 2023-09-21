@@ -32,12 +32,15 @@ model = L(GeneralizedRCNN)(
         top_block=L(LastLevelMaxPool)(),
     ),
     proposal_generator=L(RPN)(
-        in_features=["p2", "p3", "p4"],
-        head=L(StandardRPNHead)(in_channels=256, num_anchors=3),
+        in_features=["p2", "p3"],
+        head=L(StandardRPNHead)(in_channels=256, num_anchors=2),
         anchor_generator=L(DefaultAnchorGenerator)(
-            sizes=[[32], [64], [128], [256], [512]],
-            aspect_ratios=[0.5, 1.0, 2.0],
-            strides=[4, 8, 16, 32, 64],
+            sizes=[[32], [64]],
+            aspect_ratios=[0.5, 1.0],
+            strides=[
+                7,
+                14,
+            ],
             offset=0.0,
         ),
         anchor_matcher=L(Matcher)(
@@ -57,17 +60,18 @@ model = L(GeneralizedRCNN)(
         proposal_matcher=L(Matcher)(
             thresholds=[0.5], labels=[0, 1], allow_low_quality_matches=False
         ),
-        box_in_features=["p2", "p3", "p4"],
+        box_in_features=["p2", "p3"],
         box_pooler=L(ROIPooler)(
             output_size=7,
-            scales=(1.0 / 4, 1.0 / 8, 1.0 / 16),
+            scales=(1.0 / 7, 1.0 / 14),
             sampling_ratio=0,
             pooler_type="ROIAlignV2",
         ),
         box_head=L(FastRCNNConvFCHead)(
             input_shape=ShapeSpec(channels=256, height=7, width=7),
-            conv_dims=[],
-            fc_dims=[1024, 1024],
+            conv_dims=[256, 256, 256, 256],
+            fc_dims=[1024],
+            conv_norm="LN",
         ),
         box_predictor=L(FastRCNNOutputLayers)(
             input_shape=ShapeSpec(channels=1024),
