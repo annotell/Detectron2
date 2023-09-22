@@ -9,7 +9,7 @@ from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
 from ..common.data.cosmos import dataloader
 
 
-model = model_zoo.get_config("common/models/mask_rcnn_dino.py").model
+model = model_zoo.get_config("common/models/rcnn_dino.py").model
 
 # Initialization and trainer settings
 train = model_zoo.get_config("common/train.py").train
