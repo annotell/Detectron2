@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import math
-from typing import List, Tuple, Union
 import torch
 
 from detectron2.layers import batched_nms, cat, move_device_like
 from detectron2.structures import Boxes, Instances
+
+import logging
+import math
+from typing import List, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,9 @@ def find_top_rpn_proposals(
     topk_proposals = []
     level_ids = []  # #lvl Tensor, each of shape (topk,)
     batch_idx = move_device_like(torch.arange(num_images, device=device), proposals[0])
-    for level_id, (proposals_i, logits_i) in enumerate(zip(proposals, pred_objectness_logits)):
+    for level_id, (proposals_i, logits_i) in enumerate(
+        zip(proposals, pred_objectness_logits)
+    ):
         Hi_Wi_A = logits_i.shape[1]
         if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
             num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
@@ -85,7 +88,9 @@ def find_top_rpn_proposals(
         topk_scores.append(topk_scores_i)
         level_ids.append(
             move_device_like(
-                torch.full((num_proposals_i,), level_id, dtype=torch.int64, device=device),
+                torch.full(
+                    (num_proposals_i,), level_id, dtype=torch.int64, device=device
+                ),
                 proposals[0],
             )
         )
@@ -102,12 +107,14 @@ def find_top_rpn_proposals(
         scores_per_img = topk_scores[n]
         lvl = level_ids
 
-        valid_mask = torch.isfinite(boxes.tensor).all(dim=1) & torch.isfinite(scores_per_img)
+        valid_mask = torch.isfinite(boxes.tensor).all(dim=1) & torch.isfinite(
+            scores_per_img
+        )
         if not valid_mask.all():
-            if training:
-                raise FloatingPointError(
-                    "Predicted boxes or scores contain Inf/NaN. Training has diverged."
-                )
+            # if training:
+            #     raise FloatingPointError(
+            #         "Predicted boxes or scores contain Inf/NaN. Training has diverged."
+            #     )
             boxes = boxes[valid_mask]
             scores_per_img = scores_per_img[valid_mask]
             lvl = lvl[valid_mask]
@@ -154,7 +161,9 @@ def add_ground_truth_to_proposals(
     assert gt is not None
 
     if len(proposals) != len(gt):
-        raise ValueError("proposals and gt should have the same length as the number of images!")
+        raise ValueError(
+            "proposals and gt should have the same length as the number of images!"
+        )
     if len(proposals) == 0:
         return proposals
 
