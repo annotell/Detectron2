@@ -111,10 +111,10 @@ def find_top_rpn_proposals(
             scores_per_img
         )
         if not valid_mask.all():
-            # if training:
-            #     raise FloatingPointError(
-            #         "Predicted boxes or scores contain Inf/NaN. Training has diverged."
-            #     )
+            if training:
+                raise FloatingPointError(
+                    "Predicted boxes or scores contain Inf/NaN. Training has diverged."
+                )
             boxes = boxes[valid_mask]
             scores_per_img = scores_per_img[valid_mask]
             lvl = lvl[valid_mask]
