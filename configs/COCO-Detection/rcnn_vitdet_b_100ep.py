@@ -9,16 +9,16 @@ from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
 from ..common.data.cosmos import dataloader
 
 
-model = model_zoo.get_config("common/models/mask_rcnn_vitdet.py").model
+model = model_zoo.get_config("common/models/rcnn_vitdet.py").model
 
 # Initialization and trainer settings
 train = model_zoo.get_config("common/train.py").train
 train.amp.enabled = True
 train.ddp.fp16_compression = True
 train.init_checkpoint = (
-    "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_base.pth?matching_heuristics=True"
+    "./model_vitdet_cocopretrain.pkl"
 )
-
+train.output_dir = './rcnn_vitdet_b_100ep'
 
 # Schedule
 # 100 ep = 184375 iters * 64 images/iter / 118000 images/ep
