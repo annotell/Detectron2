@@ -95,6 +95,7 @@ def do_train(args, cfg):
     )
 
     checkpointer.resume_or_load(cfg.train.init_checkpoint, resume=args.resume)
+    # DetectionCheckpointer(model.backbone.net).load("dinov2_vitb14_pretrain.pth")
     if args.resume and checkpointer.has_checkpoint():
         # The checkpoint stores the training iteration that just finished, thus we start
         # at the next iteration
@@ -107,6 +108,10 @@ def do_train(args, cfg):
 def main(args):
     cfg = LazyConfig.load(args.config_file)
     cfg = LazyConfig.apply_overrides(cfg, args.opts)
+    cfg.train.init_checkpoint = args.init_checkpoint
+    print(f"Using checkpoint {args.init_checkpoint}")
+    cfg.dataloader.evaluator.output_dir = args.evaluator_output_dir
+    print(f"Using evaluator output dir {args.evaluator_output_dir}")
     default_setup(cfg, args)
 
     if args.eval_only:

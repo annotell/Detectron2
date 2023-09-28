@@ -66,12 +66,13 @@ def get_dataset_dict_test(root_dir: str, names: list):
         temp_annotations = []
         for obj in record["annotations"]:
             bbox = obj["bbox"]
-            if bbox[0] > 1665 and bbox[1] > 825 and bbox[2] < 2183 and bbox[3] < 1343:
+            if bbox[0] >= 1665 and bbox[1] >= 825 and bbox[2] <= 2183 and bbox[3] <= 1343:
+                obj["bbox"] -= np.array([1665, 825, 1665, 825])
                 temp_annotations.append(obj)
         record["annotations"] = temp_annotations
 
     np.random.seed(0)
-    dataset_dicts = np.random.choice(dataset_dicts, 100, replace=False)
+    dataset_dicts = np.random.choice(dataset_dicts, 10000, replace=False)
     print_instances_class_histogram(dataset_dicts, class_names)
     return dataset_dicts
 
@@ -115,7 +116,6 @@ def mapper_camera_training(dataset_dict):
     ]
     instances = utils.annotations_to_instances(annos, image.shape[:2])
     dataset_dict["instances"] = utils.filter_empty_instances(instances)
-
     return dataset_dict
 
 
@@ -142,7 +142,8 @@ def mapper_camera_test(dataset_dict):
     ]
     instances = utils.annotations_to_instances(annos, image.shape[:2])
     dataset_dict["instances"] = utils.filter_empty_instances(instances)
-
+    dataset_dict["height"] = 518
+    dataset_dict["width"] = 518
     return dataset_dict
 
 

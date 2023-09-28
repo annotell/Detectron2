@@ -279,6 +279,12 @@ class COCOEvaluator(DatasetEvaluator):
             res = self._derive_coco_results(
                 coco_eval, task, class_names=self._metadata.get("thing_classes")
             )
+            if self._output_dir:
+                file_path = os.path.join(self._output_dir, f"coco_table_{task}_results.json")
+                self._logger.info("Saving results to {}".format(file_path))
+                with PathManager.open(file_path, "w") as f:
+                    f.write(json.dumps(res))
+                    f.flush()
             self._results[task] = res
 
     def _eval_box_proposals(self, predictions):

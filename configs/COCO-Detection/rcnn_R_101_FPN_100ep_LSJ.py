@@ -10,12 +10,12 @@ from ..common.optim import SGD as optimizer
 from ..common.train import train
 
 # train from scratch
-train.init_checkpoint = ""
+# train.init_checkpoint = ""
 train.amp.enabled = True
 train.ddp.fp16_compression = True
-train.init_checkpoint = (
-    "detectron2://ImageNetPretrained/MSRA/R-101.pkl?matching_heuristics=True"
-)
+# train.init_checkpoint = (
+#     "detectron2://ImageNetPretrained/MSRA/R-101.pkl?matching_heuristics=True"
+# )
 model.backbone.bottom_up.freeze_at = 0
 
 # SyncBN

@@ -130,7 +130,12 @@ Run on multiple machines:
     parser.add_argument(
         "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
-
+    parser.add_argument(
+        "--init-checkpoint", type=str, default="", help="init checkpoint to use for model"
+    )
+    parser.add_argument(
+        "--evaluator-output-dir", type=str, default="", help="evaluator output directory"
+    )
     # PyTorch still may leave orphan processes in multi-gpu training.
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
