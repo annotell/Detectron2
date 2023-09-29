@@ -66,13 +66,13 @@ def get_dataset_dict_test(root_dir: str, names: list):
         temp_annotations = []
         for obj in record["annotations"]:
             bbox = obj["bbox"]
-            if bbox[0] >= 1665 and bbox[1] >= 825 and bbox[2] <= 2183 and bbox[3] <= 1343:
-                obj["bbox"] -= np.array([1665, 825, 1665, 825])
+            if bbox[0] >= 1668 and bbox[1] >= 828 and bbox[2] <= 2183 and bbox[3] <= 1343:
+                obj["bbox"] -= np.array([1668, 828, 1668, 828])
                 temp_annotations.append(obj)
         record["annotations"] = temp_annotations
 
     np.random.seed(0)
-    dataset_dicts = np.random.choice(dataset_dicts, 10000, replace=False)
+    dataset_dicts = np.random.choice(dataset_dicts, 1000, replace=False)
     print_instances_class_histogram(dataset_dicts, class_names)
     return dataset_dicts
 
@@ -91,7 +91,7 @@ def mapper_camera_training(dataset_dict):
     dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
     image = utils.read_image(dataset_dict["file_name"], format="RGB")
     image = mask_not_relevant_objects(image, dataset_dict["to_mask"])
-    image_size = 518
+    image_size = 512
     augment_list = [
         T.RandomFlip(prob=0.5, horizontal=True, vertical=False),
         T.RandomApply(
@@ -125,10 +125,10 @@ def mapper_camera_test(dataset_dict):
     image = mask_not_relevant_objects(image, dataset_dict["to_mask"])
     augment_list = [
         CropTransform(
-            x0=1665,
-            y0=825,
-            w=518,
-            h=518,
+            x0=1668,
+            y0=828,
+            w=512,
+            h=512,
             orig_h=2168,
             orig_w=3848,
         ),
@@ -142,8 +142,8 @@ def mapper_camera_test(dataset_dict):
     ]
     instances = utils.annotations_to_instances(annos, image.shape[:2])
     dataset_dict["instances"] = utils.filter_empty_instances(instances)
-    dataset_dict["height"] = 518
-    dataset_dict["width"] = 518
+    dataset_dict["height"] = 512
+    dataset_dict["width"] = 512
     return dataset_dict
 
 

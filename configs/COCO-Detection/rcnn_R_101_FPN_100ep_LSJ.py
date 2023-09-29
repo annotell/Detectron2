@@ -41,7 +41,6 @@ model.roi_heads.box_head.conv_dims = [256, 256, 256, 256]
 model.roi_heads.box_head.fc_dims = [1024]
 
 # Equivalent to 100 epochs.
-# 100 ep = 184375 iters * 64 images/iter / 118000 images/ep
 train.max_iter = 200000
 train.eval_period = 200000
 

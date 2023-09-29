@@ -4,7 +4,7 @@ from detectron2.config import LazyCall as L
 from detectron2.modeling import ViT, SimpleFeaturePyramid
 from detectron2.modeling.backbone.fpn import LastLevelMaxPool
 
-from .mask_rcnn_fpn import model
+from .rcnn_fpn import model
 from ..data.constants import constants
 
 model.pixel_mean = constants.imagenet_rgb256_mean
@@ -49,7 +49,7 @@ model.backbone = L(SimpleFeaturePyramid)(
     square_pad=512,
 )
 
-model.roi_heads.box_head.conv_norm = model.roi_heads.mask_head.conv_norm = "LN"
+model.roi_heads.box_head.conv_norm = "LN"
 
 # 2conv in RPN:
 model.proposal_generator.head.conv_dims = [-1, -1]

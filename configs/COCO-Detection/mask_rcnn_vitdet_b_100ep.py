@@ -9,7 +9,7 @@ from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
 from ..common.data.cosmos import dataloader
 
 
-model = model_zoo.get_config("common/models/rcnn_dino.py").model
+model = model_zoo.get_config("common/models/mask_rcnn_vitdet.py").model
 
 # Initialization and trainer settings
 train = model_zoo.get_config("common/train.py").train
@@ -18,11 +18,11 @@ train.ddp.fp16_compression = True
 train.init_checkpoint = (
     "./model_vitdet_cocopretrain.pkl"
 )
-# Schedule
-train.max_iter = 200000
-train.eval_period = 200000
-train.output_dir = './rcnn_dino_fpn'
 
+
+# Schedule
+# 100 ep = 184375 iters * 64 images/iter / 118000 images/ep
+train.max_iter = 184375
 
 lr_multiplier = L(WarmupParamScheduler)(
     scheduler=L(MultiStepParamScheduler)(
@@ -36,7 +36,5 @@ lr_multiplier = L(WarmupParamScheduler)(
 
 # Optimizer
 optimizer = model_zoo.get_config("common/optim.py").AdamW
-optimizer.params.lr_factor_func = partial(
-    get_vit_lr_decay_rate, num_layers=12, lr_decay_rate=0.7
-)
+optimizer.params.lr_factor_func = partial(get_vit_lr_decay_rate, num_layers=12, lr_decay_rate=0.7)
 optimizer.params.overrides = {"pos_embed": {"weight_decay": 0.0}}
