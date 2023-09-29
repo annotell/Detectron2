@@ -46,3 +46,4 @@ model.proposal_generator.head.conv_dims = [-1, -1]
 # 4conv1fc box head
 model.roi_heads.box_head.conv_dims = [256, 256, 256, 256]
 model.roi_heads.box_head.fc_dims = [1024]
+model.roi_heads.num_classes = 4
