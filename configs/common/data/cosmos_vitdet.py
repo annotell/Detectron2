@@ -105,6 +105,7 @@ def mapper_camera_training(dataset_dict):
         ),
         T.RandomCrop(crop_type="relative_range", crop_size=[0.6, 0.6]),
         T.FixedSizeCrop(crop_size=(image_size, image_size), pad=True),
+        T.Resize(shape=(512, 512)),
     ]
 
     image, transforms = T.apply_transform_gens(augment_list, image)
@@ -132,6 +133,7 @@ def mapper_camera_test(dataset_dict):
             orig_h=2168,
             orig_w=3848,
         ),
+        T.Resize(shape=(512, 512)),
     ]
     image, transforms = T.apply_transform_gens(augment_list, image)
     dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))

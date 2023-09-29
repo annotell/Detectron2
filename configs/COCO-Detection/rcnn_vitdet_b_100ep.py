@@ -6,7 +6,7 @@ from detectron2.config import LazyCall as L
 from detectron2.solver import WarmupParamScheduler
 from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
 
-from ..common.data.cosmos import dataloader
+from ..common.data.cosmos_vitdet import dataloader
 
 
 model = model_zoo.get_config("common/models/rcnn_vitdet.py").model
@@ -18,7 +18,7 @@ train.ddp.fp16_compression = True
 train.init_checkpoint = (
     "./model_vitdet_cocopretrain.pkl"
 )
-train.output_dir = './rcnn_vitdet_fpn'
+train.output_dir = './rcnn_vitdet_b_100ep'
 
 # Schedule
 train.max_iter = 200000
