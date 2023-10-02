@@ -18,7 +18,7 @@ train.ddp.fp16_compression = True
 train.init_checkpoint = (
     "./model_vitdet_cocopretrain.pkl"
 )
-train.output_dir = './rcnn_vitdet_b_100ep'
+train.output_dir = './rcnn_vitdet_fpn_2ktrain'
 
 # Schedule
 train.max_iter = 200000

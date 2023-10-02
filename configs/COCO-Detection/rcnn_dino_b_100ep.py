@@ -21,7 +21,7 @@ train.init_checkpoint = (
 # Schedule
 train.max_iter = 200000
 train.eval_period = 200000
-train.output_dir = './rcnn_dino_fpn'
+train.output_dir = './rcnn_dino_fpn_2ktrain'
 
 
 lr_multiplier = L(WarmupParamScheduler)(

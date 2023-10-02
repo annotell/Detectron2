@@ -53,6 +53,8 @@ def get_dataset_dict(root_dir: str, d: str):
                 temp_annotations.append(obj)
         record["annotations"] = temp_annotations
 
+    np.random.seed(10)
+    dataset_dicts = np.random.choice(dataset_dicts, 2000, replace=False)
     print_instances_class_histogram(dataset_dicts, class_names)
     return dataset_dicts
 
