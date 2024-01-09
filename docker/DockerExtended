@@ -3,7 +3,7 @@ FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 RUN apt-get update && apt-get install -y python3-opencv ca-certificates python3.10 python3-pip git wget sudo ninja-build
-RUN apt-get install -y build-essential libglib2.0-0 libsm6 libxext6 libxrender-dev bmon g++ libboost-all-dev
+RUN apt-get install -y build-essential libglib2.0-0 libsm6 libxext6 libxrender-dev bmon g++ libboost-all-dev nano curl
 
 RUN ln -sv /usr/bin/python3.10 /usr/bin/python
 
