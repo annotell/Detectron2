@@ -37,6 +37,10 @@ from collections import OrderedDict
 
 logger = logging.getLogger("detectron2")
 
+# NOTE: You need to specify the class names for the 2DOD model here
+# NOTE: The names (and number of classes) should match with the class names used when creating the dataset!
+MAP_IDX_CLASS_2DOD = {"0": "Vehicle"}
+
 
 def get_dataset_dict(root_dir, d):
     with open(os.path.join(root_dir, f"dataset/{d}.pickle"), "rb") as f:
@@ -172,7 +176,7 @@ def setup(args):
     cfg.merge_from_file(model_zoo.get_config_file("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml"))
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml")
     cfg.MODEL.MASK_ON = False
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(MAP_IDX_CLASS_2DOD)
     cfg.DATASETS.TRAIN = ("dataset_train",)
     cfg.DATASETS.TEST = ("dataset_val",)
     cfg.OUTPUT_DIR = "/root/Detectron2/output/logs_cascade_rcnn_X_152/"
@@ -197,7 +201,7 @@ def main(args):
     root_dir = "/root/Detectron2/data/autobaans/"
     for d in ["train", "val"]:
         DatasetCatalog.register("dataset_" + d, lambda d=d: get_dataset_dict(root_dir, d))
-        MetadataCatalog.get("dataset_" + d).set(thing_classes=["Vehicle"])
+        MetadataCatalog.get("dataset_" + d).set(thing_classes=list(MAP_IDX_CLASS_2DOD.values()))
 
     model = build_model(cfg)
     logger.info("Model:\n{}".format(model))

@@ -1,0 +1,1 @@
+We will store the model checkpoints in this folder during training
