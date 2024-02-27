@@ -36,6 +36,7 @@ import pickle
 from collections import OrderedDict
 
 logger = logging.getLogger("detectron2")
+data_root = "/root/Detectron2/data/autobaans/"
 
 # NOTE: You need to specify the class names for the 2DOD model here
 # NOTE: The names (and number of classes) should match with the class names used when creating the dataset!
@@ -43,10 +44,12 @@ MAP_IDX_CLASS_2DOD = {"0": "Vehicle"}
 
 
 def get_dataset_dict(root_dir, d):
-    with open(os.path.join(root_dir, f"dataset/{d}.pickle"), "rb") as f:
+    with open(os.path.join(root_dir, f"{d}.pickle"), "rb") as f:
         dataset_dicts = pickle.load(f)
     for record in dataset_dicts:
-        record["file_name"] = os.path.join(root_dir, record["file_name"])
+        filepath_local = record["file_name"].split("dataset/")[1]
+        filepath_local = os.path.join(data_root, filepath_local)
+        record["file_name"] = os.path.join(root_dir, filepath_local)
     return dataset_dicts
 
 
@@ -197,10 +200,8 @@ def setup(args):
 def main(args):
     cfg = setup(args)
     print(args)
-
-    root_dir = "/root/Detectron2/data/autobaans/"
     for d in ["train", "val"]:
-        DatasetCatalog.register("dataset_" + d, lambda d=d: get_dataset_dict(root_dir, d))
+        DatasetCatalog.register("dataset_" + d, lambda d=d: get_dataset_dict(data_root, d))
         MetadataCatalog.get("dataset_" + d).set(thing_classes=list(MAP_IDX_CLASS_2DOD.values()))
 
     model = build_model(cfg)
