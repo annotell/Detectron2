@@ -36,7 +36,7 @@ import pickle
 from collections import OrderedDict
 
 logger = logging.getLogger("detectron2")
-data_root = "/root/Detectron2/data/autobaans/"
+data_root = "/mnt/bfd/datasets/autobaans/2dod/dataset/"
 
 # NOTE: You need to specify the class names for the 2DOD model here
 # NOTE: The names (and number of classes) should match with the class names used when creating the dataset!
@@ -57,13 +57,14 @@ def mapper_camera_training(dataset_dict):
     dataset_dict = copy.deepcopy(dataset_dict)
     image = utils.read_image(dataset_dict["file_name"], format="RGB")
     augment_list = [
-        T.RandomFlip(prob=0.50, horizontal=True, vertical=False),
-        T.RandomApply(T.RandomBrightness(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-        T.RandomApply(T.RandomContrast(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-        T.RandomApply(T.RandomSaturation(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-        T.RandomApply(T.RandomLighting(scale=0.1), prob=0.20),
-        T.RandomCrop(crop_type="relative_range", crop_size=[0.6, 0.6]),
-        T.RandomCrop(crop_type="absolute", crop_size=[1280, 1280]),
+        # T.RandomFlip(prob=0.50, horizontal=True, vertical=False),
+        T.RandomApply(T.RandomBrightness(intensity_min=0.9, intensity_max=1.1), prob=0.1),
+        T.RandomApply(T.RandomContrast(intensity_min=0.9, intensity_max=1.1), prob=0.1),
+        # T.RandomApply(T.RandomSaturation(intensity_min=0.6, intensity_max=1.4), prob=0.20),
+        # T.RandomApply(T.RandomLighting(scale=0.1), prob=0.20),
+        # T.RandomCrop(crop_type="relative_range", crop_size=[0.6, 0.6]),
+        # T.RandomCrop(crop_type="absolute", crop_size=[1280, 1280]),
+        T.ResizeShortestEdge([800, 1080], 2000, "choice"),
     ]
 
     image, transforms = T.apply_transform_gens(augment_list, image)
@@ -180,16 +181,17 @@ def setup(args):
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml")
     cfg.MODEL.MASK_ON = False
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(MAP_IDX_CLASS_2DOD)
-    cfg.DATASETS.TRAIN = ("dataset_train",)
-    cfg.DATASETS.TEST = ("dataset_val",)
-    cfg.OUTPUT_DIR = "/root/Detectron2/output/logs_cascade_rcnn_X_152/"
+    cfg.DATASETS.TRAIN = ("dataset_train_cosmos2",)
+    cfg.DATASETS.TEST = ("dataset_val_cosmos2",)
+    cfg.OUTPUT_DIR = "/home/clement/projects/Detectron2/output/"
     cfg.TEST.EVAL_PERIOD = 0
-    cfg.SOLVER.CHECKPOINT_PERIOD = 500
-    cfg.SOLVER.IMS_PER_BATCH = 12
+    cfg.SOLVER.CHECKPOINT_PERIOD = 400
+    cfg.SOLVER.IMS_PER_BATCH = 8
     cfg.SOLVER.MAX_ITER = 600000
-    cfg.SOLVER.STEPS = []
+    cfg.SOLVER.STEPS = [100000,200000]
+    cfg.SOLVER.GAMMA = 0.1
     cfg.DATALOADER.NUM_WORKERS = 8
-    cfg.SOLVER.BASE_LR = 0.0005
+    cfg.SOLVER.BASE_LR = 0.001
     cfg.MODEL.BACKBONE.FREEZE_AT = 4
 
     cfg.freeze()
@@ -200,7 +202,7 @@ def setup(args):
 def main(args):
     cfg = setup(args)
     print(args)
-    for d in ["train", "val"]:
+    for d in ["train_cosmos2", "val_cosmos2"]:
         DatasetCatalog.register("dataset_" + d, lambda d=d: get_dataset_dict(data_root, d))
         MetadataCatalog.get("dataset_" + d).set(thing_classes=list(MAP_IDX_CLASS_2DOD.values()))
 
