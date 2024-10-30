@@ -1,0 +1,9 @@
+table: 'annotell-com.dbt_shapes.shapes_training_extreme_point_box'
+projects: [178] # if requests are provided, this will be ignored
+requests: []
+classes: ['Vehicle', 'Pedestrian', 'VulnerableVehicle']
+
+dataset_root: '/mnt/bfd/datasets/autobaans/2dod'
+dataset_name: 'cosmos_project_178' # name of the dataset folder, will create if it does not exist
+
+train_split: 0.98
