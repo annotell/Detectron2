@@ -13,6 +13,7 @@ from kognic.filestorage.resource_parser import parse_file_id
 import uuid
 from io import BytesIO
 from PIL import Image
+import argparse
 
 
 def print_stats(t):
@@ -122,7 +123,7 @@ def download_single_input(item):
     judgement_id, resource_id, geometries, sensor_name, dataset_folder = item[1], item[2], item[3], item[4], item[5]
 
     filename = f"{judgement_id}-{sensor_name}"
-    img_path = os.path.join(dataset_folder, 'images', f'{filename}.png')
+    img_path = os.path.join(dataset_folder, 'images', f'{filename}.webp')
     if os.path.exists(img_path):
         if os.path.exists(os.path.join(dataset_folder, 'annos', f'{filename}.pickle')):
             return True
@@ -133,7 +134,7 @@ def download_single_input(item):
         return False
     width, height = image.size
     annotation = get_annotation(width, height, img_path, geometries)
-    image.save(os.path.join(dataset_folder, 'images', f"{filename}.png"))
+    image.save(os.path.join(dataset_folder, 'images', f"{filename}.webp"))
     with open(os.path.join(dataset_folder, 'annos', f'{filename}.pickle'), 'wb') as handle:
         pickle.dump(annotation, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return True
@@ -151,7 +152,7 @@ def download_dataset(df, cfg):
         os.makedirs(os.path.join(dataset_folder, 'images'), exist_ok=True)
         os.makedirs(os.path.join(dataset_folder, 'annos'), exist_ok=True)
         item.append(dataset_folder)
-        if os.path.exists(os.path.join(dataset_folder, 'images', f'{filename}.png')):
+        if os.path.exists(os.path.join(dataset_folder, 'images', f'{filename}.webp')):
             if os.path.exists(os.path.join(dataset_folder, 'annos', f'{filename}.pickle')):
                 continue
         to_download.append(item)
@@ -190,7 +191,11 @@ def copy_config(cfg):
         
 if __name__ == "__main__":
     # Read yaml file
-    with open("config.yaml") as file:
+    parser = argparse.ArgumentParser(description="Download dataset based on configuration.")
+    parser.add_argument("--config", type=str, default="config.yaml", help="Path to the configuration file.")
+    args = parser.parse_args()
+
+    with open(args.config) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
     sql_query = create_sql_request(config)
     # Initialize BigQuery client
@@ -207,8 +212,10 @@ if __name__ == "__main__":
     if proceed == "y" or proceed == "":
         print("Proceeding with the download...")
         download_dataset(df, config)
+        # Create a basic train/val split
         create_splits(config)
         # Copy config.yaml to the new dataset folder
         copy_config(config)
     else:
         print("Download aborted.")
+
