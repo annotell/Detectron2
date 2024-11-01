@@ -6,7 +6,6 @@ import numpy as np
 import os
 import glob
 from tqdm import tqdm
-from p_tqdm import p_umap
 import pickle
 from kognic.filestorage.filestorage import FileStorage
 from kognic.filestorage.resource_parser import parse_file_id
@@ -14,6 +13,8 @@ import uuid
 from io import BytesIO
 from PIL import Image
 import argparse
+import itertools
+from concurrent.futures import ThreadPoolExecutor
 
 
 def print_stats(t):
@@ -45,7 +46,8 @@ def create_sql_request(cfg):
     table = cfg["table"]
     projects = cfg["projects"]
     requests = cfg["requests"]
-    classes = cfg["classes"]
+    classes_dict = cfg["classes"]
+    classes = list(classes_dict.keys())
     if len(classes) > 1:
         classes = tuple(classes)
     else:
@@ -98,7 +100,7 @@ def get_bbox_from_extreme(extreme_box):
     return [x_min, y_min, x_max, y_max]
 
 
-def get_annotation(width, height, file_name, geometries):
+def get_annotation(width, height, file_name, geometries, cfg):
     annotation = {}
     annotation["file_name"] = file_name
     annotation["image_id"] = str(uuid.uuid4())
@@ -112,35 +114,47 @@ def get_annotation(width, height, file_name, geometries):
         obj = {}
         obj["bbox_mode"] = 0  # BoxMode.XYXY_ABS
         obj["bbox"] = box
-        obj["category_id"] = 0
+        obj["category_id"] = cfg['classes'][feat['shape_class']] # Map class to category_id
         obj['object_type'] = feat['shape_class']
         objs.append(obj)
     annotation["annotations"] = objs
     return annotation
 
 
-def download_single_input(item):
-    judgement_id, resource_id, geometries, sensor_name, dataset_folder = item[1], item[2], item[3], item[4], item[5]
+def download_single_input(item, cfg):
+    judgement_id, resource_id, geometries, sensor_name = item[1], item[2], item[3], item[4]
+    dataset_folder = os.path.join(cfg['dataset_root'], cfg['dataset_name'])
 
     filename = f"{judgement_id}-{sensor_name}"
     img_path = os.path.join(dataset_folder, 'images', f'{filename}.webp')
+    annos_path = os.path.join(dataset_folder, 'annos', f'{filename}.pickle')
+    
     if os.path.exists(img_path):
-        if os.path.exists(os.path.join(dataset_folder, 'annos', f'{filename}.pickle')):
+        if os.path.exists(annos_path):
             return True
     try:
         image = get_image(resource_id)
+        width, height = image.size
+        image.save(img_path)
     except Exception as e:
         print(f"Failed to download image for {filename}")
         return False
-    width, height = image.size
-    annotation = get_annotation(width, height, img_path, geometries)
-    image.save(os.path.join(dataset_folder, 'images', f"{filename}.webp"))
-    with open(os.path.join(dataset_folder, 'annos', f'{filename}.pickle'), 'wb') as handle:
+    
+    annotation = get_annotation(width, height, img_path, geometries, cfg)
+    with open(annos_path, 'wb') as handle:
         pickle.dump(annotation, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    return True
+    return True 
+
+
+def download_single_input_star(unpacked_args):
+    return download_single_input(*unpacked_args)
 
 
 def download_dataset(df, cfg):
+    dataset_folder = os.path.join(cfg['dataset_root'], cfg['dataset_name'])
+    os.makedirs(os.path.join(dataset_folder, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(dataset_folder, 'annos'), exist_ok=True)
+    
     data = df.values.tolist()
     to_download = []
     for item in data:
@@ -148,17 +162,16 @@ def download_dataset(df, cfg):
         judgement_id = item[1]
         sensor_name = item[4]
         filename = f"{judgement_id}-{sensor_name}"
-        dataset_folder = os.path.join(cfg['dataset_root'], cfg['dataset_name'])
-        os.makedirs(os.path.join(dataset_folder, 'images'), exist_ok=True)
-        os.makedirs(os.path.join(dataset_folder, 'annos'), exist_ok=True)
-        item.append(dataset_folder)
         if os.path.exists(os.path.join(dataset_folder, 'images', f'{filename}.webp')):
             if os.path.exists(os.path.join(dataset_folder, 'annos', f'{filename}.pickle')):
                 continue
         to_download.append(item)
-    
-    nr_successful = sum(p_umap(download_single_input, to_download, num_cpus=8))
-    print(f'Processed {nr_successful} inputs')
+
+    with ThreadPoolExecutor(max_workers=cfg["max_workers"]) as executor:
+        results = list(tqdm(executor.map(download_single_input_star, zip(to_download, itertools.repeat(cfg))), total=len(to_download)))
+
+    nr_successful = sum(results)
+    print(f'Processed {nr_successful} inputs!')
     
     
 def create_splits(cfg):
@@ -213,7 +226,8 @@ if __name__ == "__main__":
         print("Proceeding with the download...")
         download_dataset(df, config)
         # Create a basic train/val split
-        create_splits(config)
+        if config["create_splits"]:
+            create_splits(config)
         # Copy config.yaml to the new dataset folder
         copy_config(config)
     else:
