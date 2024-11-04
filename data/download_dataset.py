@@ -178,12 +178,23 @@ def create_splits(cfg):
     np.random.seed(42)
     all_annotations = []
     dataset_folder = os.path.join(cfg['dataset_root'], cfg['dataset_name'])
-    annotation_files = np.random.permutation(glob.glob(os.path.join(dataset_folder, 'annos', '*.pickle')))
+    image_files = np.random.permutation(glob.glob(os.path.join(dataset_folder, 'images', '*.webp')))
     
-    for annotation_file in annotation_files:
-        with open(annotation_file, 'rb') as handle:
-            annotation = pickle.load(handle)
+    for image_file in tqdm(image_files):
+        try:
+            # Check if image is corrupted
+            with Image.open(image_file) as img:
+                img.verify()
+        except Exception as e:
+            print(f"Failed to open image {image_file}")
+            continue
+        annotation_file = image_file.replace('images', 'annos').replace('.webp', '.pickle')
+        if os.path.exists(annotation_file):
+            with open(annotation_file, 'rb') as handle:
+                annotation = pickle.load(handle)
             all_annotations.append(annotation)
+        else: 
+            print(f"Annotation file for {image_file} not found.")
             
     split_idx = int(len(all_annotations) * cfg['train_split'])
     train_annotations = all_annotations[:split_idx]
