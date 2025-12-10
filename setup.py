@@ -158,7 +158,7 @@ setup(
     packages=find_packages(exclude=("configs", "tests*")) + list(PROJECTS.keys()),
     package_dir=PROJECTS,
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
-    python_requires=">=3.7",
+    python_requires=">=3.9,<3.15",
     install_requires=[
         # These dependencies are not pure-python.
         # In general, avoid adding dependencies that are not pure-python because they are not
@@ -185,7 +185,6 @@ setup(
         # on compatible version of iopath.
         "fvcore>=0.1.5,<0.1.6",  # required like this to make it pip installable
         "iopath>=0.1.7,<0.1.10",
-        "dataclasses; python_version<'3.7'",
         "omegaconf>=2.1,<2.4",
         "hydra-core>=1.1",
         "black",
