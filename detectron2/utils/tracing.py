@@ -4,11 +4,18 @@ import torch
 from detectron2.utils.env import TORCH_VERSION
 
 try:
-    from torch.fx._symbolic_trace import is_fx_tracing as is_fx_tracing_current
+    # Try to import the new recommended function first
+    from torch.fx._symbolic_trace import is_fx_symbolic_tracing as is_fx_tracing_current
 
     tracing_current_exists = True
 except ImportError:
-    tracing_current_exists = False
+    # Fall back to the deprecated function if new one doesn't exist
+    try:
+        from torch.fx._symbolic_trace import is_fx_tracing as is_fx_tracing_current
+
+        tracing_current_exists = True
+    except ImportError:
+        tracing_current_exists = False
 
 try:
     from torch.fx._symbolic_trace import _orig_module_call
