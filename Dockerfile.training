@@ -3,7 +3,8 @@
 FROM eu.gcr.io/annotell-com/autobaan-docker:latest
 
 # Detectron2 is already installed at /opt/Detectron2 in the base image.
-# Copy the distributed training entrypoint.
+# Copy GCS helper and the distributed training entrypoint.
+COPY scripts/gcs_helper.py /opt/gcs_helper.py
 COPY scripts/distributed_train.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
