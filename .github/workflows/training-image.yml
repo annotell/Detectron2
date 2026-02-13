@@ -1,0 +1,49 @@
+name: Build detectron2-training image
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - Dockerfile.training
+      - scripts/distributed_train.sh
+      - training/**
+      - .github/workflows/training-image.yml
+  pull_request:
+    branches: [master, main]
+    paths:
+      - Dockerfile.training
+      - scripts/distributed_train.sh
+      - .github/workflows/training-image.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Auth
+        uses: annotell/gha-common/gcloud-auth@v1
+
+      - name: Docker auth
+        uses: annotell/gha-common/gcloud-docker-auth@v1
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.training
+          push: ${{ github.event_name != 'pull_request' }}
+          platforms: linux/amd64
+          tags: |
+            eu.gcr.io/annotell-com/detectron2-training:latest
+            eu.gcr.io/annotell-com/detectron2-training:${{ github.sha }}
+          cache-from: type=registry,ref=eu.gcr.io/annotell-com/detectron2-training:latest
+          cache-to: type=inline

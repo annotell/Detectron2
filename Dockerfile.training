@@ -1,0 +1,12 @@
+# Distributed training image for Detectron2
+# Thin layer on autobaan-docker which already has PyTorch, CUDA, and Detectron2 installed
+FROM eu.gcr.io/annotell-com/autobaan-docker:latest
+
+# Detectron2 is already installed at /opt/Detectron2 in the base image.
+# Copy the distributed training entrypoint.
+COPY scripts/distributed_train.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+WORKDIR /opt/Detectron2
+
+ENTRYPOINT ["/entrypoint.sh"]

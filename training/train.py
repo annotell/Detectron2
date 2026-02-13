@@ -30,40 +30,136 @@ from detectron2.utils.events import (
 )
 
 import copy
+import glob
 import logging
+import numpy as np
 import os
 import pickle
+import uuid
 from collections import OrderedDict
+from PIL import Image
 
 logger = logging.getLogger("detectron2")
-data_root = "/mnt/bfd/datasets/autobaans/2dod/dataset/"
-
-# NOTE: You need to specify the class names for the 2DOD model here
-# NOTE: The names (and number of classes) should match with the class names used when creating the dataset!
-MAP_IDX_CLASS_2DOD = {"0": "Vehicle"}
 
 
-def get_dataset_dict(root_dir, d):
-    with open(os.path.join(root_dir, f"{d}.pickle"), "rb") as f:
-        dataset_dicts = pickle.load(f)
-    for record in dataset_dicts:
-        filepath_local = record["file_name"].split("dataset/")[1]
-        filepath_local = os.path.join(data_root, filepath_local)
-        record["file_name"] = os.path.join(root_dir, filepath_local)
-    return dataset_dicts
+def build_coco_dataset(data_root, class_map, split_ratio=0.98):
+    """Build COCO-format dataset dicts from raw 2D annotations.
+
+    Scans {data_root}/images/ for .webp files, matches to
+    {data_root}/annos/{stem}_ExtremePointBox.pickle annotations,
+    and converts to Detectron2 COCO format.
+
+    Caches result as train_coco.pickle / val_coco.pickle.
+
+    Args:
+        data_root: Path to dataset directory (contains images/ and annos/)
+        class_map: Dict {data_class: model_class}
+        split_ratio: Train/val split ratio (default 0.98)
+
+    Returns:
+        (train_dicts, val_dicts): Lists of COCO-format dataset dicts
+    """
+    train_path = os.path.join(data_root, "train_coco.pickle")
+    val_path = os.path.join(data_root, "val_coco.pickle")
+
+    if os.path.exists(train_path) and os.path.exists(val_path):
+        logger.info(f"Loading cached COCO splits from {data_root}")
+        with open(train_path, "rb") as f:
+            train_dicts = pickle.load(f)
+        with open(val_path, "rb") as f:
+            val_dicts = pickle.load(f)
+        logger.info(f"  Train: {len(train_dicts)} images, Val: {len(val_dicts)} images")
+        return train_dicts, val_dicts
+
+    # Derive category_ids from class_map (sorted unique model classes)
+    model_classes = sorted(set(class_map.values()))
+    class_to_cat_id = {mc: i for i, mc in enumerate(model_classes)}
+
+    logger.info(f"Building COCO dataset from {data_root}")
+    logger.info(f"  Class mapping: {class_map}")
+    logger.info(f"  Model classes -> category_id: {class_to_cat_id}")
+
+    images_dir = os.path.join(data_root, "images")
+    annos_dir = os.path.join(data_root, "annos")
+
+    records = []
+    skipped_no_anno = 0
+    skipped_no_valid = 0
+
+    for img_file in sorted(glob.glob(os.path.join(images_dir, "*.webp"))):
+        stem = os.path.splitext(os.path.basename(img_file))[0]
+        anno_file = os.path.join(annos_dir, f"{stem}_ExtremePointBox.pickle")
+
+        if not os.path.exists(anno_file):
+            skipped_no_anno += 1
+            continue
+
+        with Image.open(img_file) as img:
+            width, height = img.size
+
+        with open(anno_file, "rb") as f:
+            raw_annos = pickle.load(f)
+
+        coco_annos = []
+        for anno in raw_annos:
+            data_class = anno["class"]
+            model_class = class_map.get(data_class)
+            if model_class is None:
+                continue  # Not in mapping -> ignored
+            coco_annos.append({
+                "bbox_mode": 0,  # BoxMode.XYXY_ABS
+                "bbox": anno["bbox"],
+                "category_id": class_to_cat_id[model_class],
+                "object_type": model_class,
+            })
+
+        if not coco_annos:
+            skipped_no_valid += 1
+            continue
+
+        records.append({
+            "file_name": os.path.abspath(img_file),
+            "image_id": str(uuid.uuid4()),
+            "height": height,
+            "width": width,
+            "annotations": coco_annos,
+        })
+
+    logger.info(f"  Total images with annotations: {len(records)}")
+    if skipped_no_anno > 0:
+        logger.info(f"  Skipped (no annotation file): {skipped_no_anno}")
+    if skipped_no_valid > 0:
+        logger.info(f"  Skipped (no valid classes): {skipped_no_valid}")
+
+    if len(records) == 0:
+        raise ValueError(
+            f"No valid image-annotation pairs found in {data_root}. "
+            f"Expected images in {images_dir} and ExtremePointBox annotations in {annos_dir}."
+        )
+
+    # Shuffle and split
+    rng = np.random.RandomState(42)
+    rng.shuffle(records)
+    split_idx = int(len(records) * split_ratio)
+    train_dicts, val_dicts = records[:split_idx], records[split_idx:]
+
+    logger.info(f"  Train: {len(train_dicts)} images, Val: {len(val_dicts)} images")
+
+    # Cache
+    with open(train_path, "wb") as f:
+        pickle.dump(train_dicts, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(val_path, "wb") as f:
+        pickle.dump(val_dicts, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return train_dicts, val_dicts
 
 
 def mapper_camera_training(dataset_dict):
     dataset_dict = copy.deepcopy(dataset_dict)
     image = utils.read_image(dataset_dict["file_name"], format="RGB")
     augment_list = [
-        # T.RandomFlip(prob=0.50, horizontal=True, vertical=False),
         T.RandomApply(T.RandomBrightness(intensity_min=0.9, intensity_max=1.1), prob=0.1),
         T.RandomApply(T.RandomContrast(intensity_min=0.9, intensity_max=1.1), prob=0.1),
-        # T.RandomApply(T.RandomSaturation(intensity_min=0.6, intensity_max=1.4), prob=0.20),
-        # T.RandomApply(T.RandomLighting(scale=0.1), prob=0.20),
-        # T.RandomCrop(crop_type="relative_range", crop_size=[0.6, 0.6]),
-        # T.RandomCrop(crop_type="absolute", crop_size=[1280, 1280]),
         T.ResizeShortestEdge([800, 1080], 2000, "choice"),
     ]
 
@@ -171,7 +267,7 @@ def do_train(cfg, model, resume=False):
             periodic_checkpointer.step(iteration)
 
 
-def setup(args):
+def setup(args, num_classes):
     """
     Create configs and perform basic setups.
     """
@@ -180,31 +276,54 @@ def setup(args):
     cfg.merge_from_file(model_zoo.get_config_file("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml"))
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml")
     cfg.MODEL.MASK_ON = False
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(MAP_IDX_CLASS_2DOD)
-    cfg.DATASETS.TRAIN = ("dataset_train_cosmos2",)
-    cfg.DATASETS.TEST = ("dataset_val_cosmos2",)
-    cfg.OUTPUT_DIR = "/home/clement/projects/Detectron2/output/"
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
+    cfg.DATASETS.TRAIN = ("autobaans_train",)
+    cfg.DATASETS.TEST = ("autobaans_val",)
+    cfg.OUTPUT_DIR = args.output_dir
     cfg.TEST.EVAL_PERIOD = 0
     cfg.SOLVER.CHECKPOINT_PERIOD = 400
     cfg.SOLVER.IMS_PER_BATCH = 8
     cfg.SOLVER.MAX_ITER = 600000
-    cfg.SOLVER.STEPS = [100000,200000]
+    cfg.SOLVER.STEPS = [100000, 200000]
     cfg.SOLVER.GAMMA = 0.1
     cfg.DATALOADER.NUM_WORKERS = 8
     cfg.SOLVER.BASE_LR = 0.001
     cfg.MODEL.BACKBONE.FREEZE_AT = 4
 
+    # Auto-scale LR for distributed training (linear scaling rule).
+    # When running on more GPUs than the config was tuned for, scale LR proportionally.
+    BASE_GPUS = int(os.environ.get("BASE_GPUS", "2"))
+    actual_gpus = args.num_gpus * args.num_machines
+    if actual_gpus > BASE_GPUS and os.environ.get("TRAINING_MODE") == "gcp":
+        scale_factor = actual_gpus / BASE_GPUS
+        original_lr = cfg.SOLVER.BASE_LR
+        cfg.SOLVER.BASE_LR = original_lr * scale_factor
+        cfg.SOLVER.WARMUP_ITERS = max(cfg.SOLVER.WARMUP_ITERS, 1000)
+        logger.info(
+            f"Auto-scaled LR: {original_lr} -> {cfg.SOLVER.BASE_LR} "
+            f"(scale={scale_factor:.1f}x, {BASE_GPUS} -> {actual_gpus} GPUs), "
+            f"warmup_iters={cfg.SOLVER.WARMUP_ITERS}"
+        )
+
     cfg.freeze()
-    default_setup(cfg, args)  # if you don't like any of the default setup, write your own setup code
+    default_setup(cfg, args)
     return cfg
 
 
 def main(args):
-    cfg = setup(args)
-    print(args)
-    for d in ["train_cosmos2", "val_cosmos2"]:
-        DatasetCatalog.register("dataset_" + d, lambda d=d: get_dataset_dict(data_root, d))
-        MetadataCatalog.get("dataset_" + d).set(thing_classes=list(MAP_IDX_CLASS_2DOD.values()))
+    # Parse class mapping from CLI: "Car:Vehicle,Person:Pedestrian"
+    class_map = dict(pair.split(":") for pair in args.class_map.split(","))
+    model_classes = sorted(set(class_map.values()))
+
+    # Build COCO dataset from raw annotations
+    train_dicts, val_dicts = build_coco_dataset(args.data_root, class_map)
+
+    cfg = setup(args, num_classes=len(model_classes))
+
+    DatasetCatalog.register("autobaans_train", lambda: train_dicts)
+    DatasetCatalog.register("autobaans_val", lambda: val_dicts)
+    MetadataCatalog.get("autobaans_train").set(thing_classes=model_classes)
+    MetadataCatalog.get("autobaans_val").set(thing_classes=model_classes)
 
     model = build_model(cfg)
     logger.info("Model:\n{}".format(model))
@@ -221,7 +340,18 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = default_argument_parser().parse_args()
+    parser = default_argument_parser()
+    parser.add_argument("--data-root", type=str, required=True,
+                        help="Dataset directory (contains images/ and annos/)")
+    parser.add_argument("--class-map", type=str, required=True,
+                        help="Class mapping as data:model pairs, e.g. 'Car:Vehicle,Person:Pedestrian'")
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Output directory for model checkpoints and logs")
+    args = parser.parse_args()
+
+    if args.output_dir is None:
+        args.output_dir = os.path.join(args.data_root, "output_2d")
+
     print("Command Line Args:", args)
     launch(
         main,
