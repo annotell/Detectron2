@@ -86,19 +86,36 @@ def build_coco_dataset(data_root, class_map, split_ratio=0.98):
     skipped_no_anno = 0
     skipped_no_valid = 0
 
+    # Cache annotation files to avoid re-reading for each camera view
+    anno_cache = {}
+
     for img_file in sorted(glob.glob(os.path.join(images_dir, "*.webp"))):
         stem = os.path.splitext(os.path.basename(img_file))[0]
+
+        # Try exact match first: {stem}_ExtremePointBox.pickle
         anno_file = os.path.join(annos_dir, f"{stem}_ExtremePointBox.pickle")
+        if not os.path.exists(anno_file):
+            # Fallback: annotations may be per-timestamp (sensor=None),
+            # e.g. {judgement_id}_{timestamp}_None_ExtremePointBox.pickle
+            parts = stem.split("_")
+            if len(parts) >= 2:
+                base_id = f"{parts[0]}_{parts[1]}"
+                anno_file = os.path.join(annos_dir, f"{base_id}_None_ExtremePointBox.pickle")
 
         if not os.path.exists(anno_file):
             skipped_no_anno += 1
             continue
 
-        with Image.open(img_file) as img:
-            width, height = img.size
+        try:
+            with Image.open(img_file) as img:
+                width, height = img.size
+        except Exception:
+            continue  # Skip corrupted/empty images
 
-        with open(anno_file, "rb") as f:
-            raw_annos = pickle.load(f)
+        if anno_file not in anno_cache:
+            with open(anno_file, "rb") as f:
+                anno_cache[anno_file] = pickle.load(f)
+        raw_annos = anno_cache[anno_file]
 
         coco_annos = []
         for anno in raw_annos:
@@ -106,9 +123,14 @@ def build_coco_dataset(data_root, class_map, split_ratio=0.98):
             model_class = class_map.get(data_class)
             if model_class is None:
                 continue  # Not in mapping -> ignored
+            bbox = anno["bbox"]
+            # Filter bboxes that don't fit this camera's image dimensions
+            x_min, y_min, x_max, y_max = bbox
+            if x_max > width or y_max > height or x_min < 0 or y_min < 0:
+                continue
             coco_annos.append({
                 "bbox_mode": 0,  # BoxMode.XYXY_ABS
-                "bbox": anno["bbox"],
+                "bbox": bbox,
                 "category_id": class_to_cat_id[model_class],
                 "object_type": model_class,
             })
@@ -281,13 +303,13 @@ def setup(args, num_classes):
     cfg.DATASETS.TEST = ("autobaans_val",)
     cfg.OUTPUT_DIR = args.output_dir
     cfg.TEST.EVAL_PERIOD = 0
-    cfg.SOLVER.CHECKPOINT_PERIOD = 400
-    cfg.SOLVER.IMS_PER_BATCH = 8
-    cfg.SOLVER.MAX_ITER = 600000
-    cfg.SOLVER.STEPS = [100000, 200000]
+    cfg.SOLVER.CHECKPOINT_PERIOD = args.checkpoint_period
+    cfg.SOLVER.IMS_PER_BATCH = args.batch_size * args.num_gpus
+    cfg.SOLVER.MAX_ITER = args.max_iter
+    cfg.SOLVER.STEPS = [int(args.max_iter * 0.6), int(args.max_iter * 0.8)]
     cfg.SOLVER.GAMMA = 0.1
-    cfg.DATALOADER.NUM_WORKERS = 8
-    cfg.SOLVER.BASE_LR = 0.001
+    cfg.DATALOADER.NUM_WORKERS = args.num_workers
+    cfg.SOLVER.BASE_LR = args.learning_rate
     cfg.MODEL.BACKBONE.FREEZE_AT = 4
 
     # Auto-scale LR for distributed training (linear scaling rule).
@@ -345,8 +367,7 @@ if __name__ == "__main__":
                         help="Dataset directory (contains images/ and annos/)")
     parser.add_argument("--class-map", type=str, required=True,
                         help="Class mapping as data:model pairs, e.g. 'Car:Vehicle,Person:Pedestrian'")
-    parser.add_argument("--output-dir", type=str, default=None,
-                        help="Output directory for model checkpoints and logs")
+    # --output-dir is already provided by default_argument_parser()
     args = parser.parse_args()
 
     if args.output_dir is None:
