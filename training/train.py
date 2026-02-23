@@ -42,34 +42,44 @@ from PIL import Image
 logger = logging.getLogger("detectron2")
 
 
-def build_coco_dataset(data_root, class_map, split_ratio=0.98):
+def build_coco_dataset(data_root, class_map, split_ratio=0.98, cache_dir=None):
     """Build COCO-format dataset dicts from raw 2D annotations.
 
     Scans {data_root}/images/ for .webp files, matches to
     {data_root}/annos/{stem}_ExtremePointBox.pickle annotations,
     and converts to Detectron2 COCO format.
 
-    Caches result as train_coco.pickle / val_coco.pickle.
+    Caches result as train_coco.pickle / val_coco.pickle in cache_dir
+    (defaults to data_root if not specified).
 
     Args:
         data_root: Path to dataset directory (contains images/ and annos/)
         class_map: Dict {data_class: model_class}
         split_ratio: Train/val split ratio (default 0.98)
+        cache_dir: Directory to write cache files (must be writable).
+                   Falls back to data_root if None.
 
     Returns:
         (train_dicts, val_dicts): Lists of COCO-format dataset dicts
     """
-    train_path = os.path.join(data_root, "train_coco.pickle")
-    val_path = os.path.join(data_root, "val_coco.pickle")
+    # Check both cache_dir and data_root for cached splits
+    cache_base = cache_dir or data_root
+    train_path = os.path.join(cache_base, "train_coco.pickle")
+    val_path = os.path.join(cache_base, "val_coco.pickle")
+    # Also check data_root (GCS FUSE may have pre-built cache from orchestrator)
+    train_path_alt = os.path.join(data_root, "train_coco.pickle")
+    val_path_alt = os.path.join(data_root, "val_coco.pickle")
 
-    if os.path.exists(train_path) and os.path.exists(val_path):
-        logger.info(f"Loading cached COCO splits from {data_root}")
-        with open(train_path, "rb") as f:
-            train_dicts = pickle.load(f)
-        with open(val_path, "rb") as f:
-            val_dicts = pickle.load(f)
-        logger.info(f"  Train: {len(train_dicts)} images, Val: {len(val_dicts)} images")
-        return train_dicts, val_dicts
+    # Check cache_dir first, then data_root
+    for tp, vp in [(train_path, val_path), (train_path_alt, val_path_alt)]:
+        if os.path.exists(tp) and os.path.exists(vp):
+            logger.info(f"Loading cached COCO splits from {os.path.dirname(tp)}")
+            with open(tp, "rb") as f:
+                train_dicts = pickle.load(f)
+            with open(vp, "rb") as f:
+                val_dicts = pickle.load(f)
+            logger.info(f"  Train: {len(train_dicts)} images, Val: {len(val_dicts)} images")
+            return train_dicts, val_dicts
 
     # Derive category_ids from class_map (sorted unique model classes)
     model_classes = sorted(set(class_map.values()))
@@ -167,11 +177,16 @@ def build_coco_dataset(data_root, class_map, split_ratio=0.98):
 
     logger.info(f"  Train: {len(train_dicts)} images, Val: {len(val_dicts)} images")
 
-    # Cache
-    with open(train_path, "wb") as f:
-        pickle.dump(train_dicts, f, protocol=pickle.HIGHEST_PROTOCOL)
-    with open(val_path, "wb") as f:
-        pickle.dump(val_dicts, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # Cache to writable directory
+    try:
+        os.makedirs(cache_base, exist_ok=True)
+        with open(train_path, "wb") as f:
+            pickle.dump(train_dicts, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(val_path, "wb") as f:
+            pickle.dump(val_dicts, f, protocol=pickle.HIGHEST_PROTOCOL)
+        logger.info(f"  Cached COCO splits to {cache_base}")
+    except OSError:
+        logger.warning(f"  Could not cache COCO splits to {cache_base} (read-only?)")
 
     return train_dicts, val_dicts
 
@@ -333,12 +348,19 @@ def setup(args, num_classes):
 
 
 def main(args):
+    # Configure logging early so build_coco_dataset messages are visible
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s")
+
     # Parse class mapping from CLI: "Car:Vehicle,Person:Pedestrian"
     class_map = dict(pair.split(":") for pair in args.class_map.split(","))
     model_classes = sorted(set(class_map.values()))
 
-    # Build COCO dataset from raw annotations
-    train_dicts, val_dicts = build_coco_dataset(args.data_root, class_map)
+    # Build COCO dataset from raw annotations.
+    # Use output_dir for cache (data_root may be read-only GCS FUSE mount).
+    os.makedirs(args.output_dir, exist_ok=True)
+    train_dicts, val_dicts = build_coco_dataset(
+        args.data_root, class_map, cache_dir=args.output_dir
+    )
 
     cfg = setup(args, num_classes=len(model_classes))
 
