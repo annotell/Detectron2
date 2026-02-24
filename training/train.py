@@ -36,6 +36,7 @@ import numpy as np
 import os
 import pickle
 import uuid
+import yaml
 from collections import OrderedDict
 from PIL import Image
 
@@ -304,6 +305,20 @@ def do_train(cfg, model, resume=False):
             periodic_checkpointer.step(iteration)
 
 
+def _save_inference_config(cfg, model_classes: list) -> None:
+    """Save inference YAML with CLASS_NAMES injected, for use by autobaan-processor.
+
+    Mirrors the 3D (PCDet) pipeline which embeds CLASS_NAMES in the uploaded model YAML.
+    Written before training starts so the file is available even if training is interrupted.
+    """
+    out_path = os.path.join(cfg.OUTPUT_DIR, "config.yaml")
+    cfg_dict = yaml.safe_load(cfg.dump())
+    cfg_dict["CLASS_NAMES"] = model_classes
+    with open(out_path, "w") as f:
+        yaml.dump(cfg_dict, f, default_flow_style=False)
+    logger.info(f"Saved inference config with CLASS_NAMES={model_classes} to {out_path}")
+
+
 def setup(args, num_classes):
     """
     Create configs and perform basic setups.
@@ -368,6 +383,8 @@ def main(args):
     DatasetCatalog.register("autobaans_val", lambda: val_dicts)
     MetadataCatalog.get("autobaans_train").set(thing_classes=model_classes)
     MetadataCatalog.get("autobaans_val").set(thing_classes=model_classes)
+
+    _save_inference_config(cfg, model_classes)
 
     model = build_model(cfg)
     logger.info("Model:\n{}".format(model))
