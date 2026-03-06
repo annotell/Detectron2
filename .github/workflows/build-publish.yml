@@ -1,0 +1,58 @@
+name: Build and publish kognic-detectron2
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.6.1). Leave empty to use version from source.'
+        required: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest-m
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          fi
+          if [[ -n "${VERSION}" ]]; then
+            sed -i "s/^__version__ = .*/__version__ = \"${VERSION}\"/" detectron2/__init__.py
+            echo "Publishing version: ${VERSION}"
+          else
+            echo "Publishing version from source: $(grep __version__ detectron2/__init__.py)"
+          fi
+
+      - name: Build wheel in CUDA container
+        run: |
+          docker build -t detectron2-builder -f .github/build.Dockerfile .
+
+      - name: Extract wheel
+        run: |
+          CONTAINER_ID=$(docker create detectron2-builder)
+          docker cp "${CONTAINER_ID}":/dist ./dist
+          docker rm "${CONTAINER_ID}"
+          ls -lh dist/
+
+      - name: Setup auth
+        uses: annotell/gha-common/gcloud-auth@v1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Publish to Artifact Registry
+        run: |
+          export UV_PUBLISH_USERNAME=oauth2accesstoken
+          export UV_PUBLISH_PASSWORD=$(gcloud auth print-access-token)
+          export UV_PUBLISH_URL=https://us-east4-python.pkg.dev/annotell-com/python-default-us
+          uv publish dist/*.whl
