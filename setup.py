@@ -160,9 +160,8 @@ setup(
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
     python_requires=">=3.9,<3.15",
     install_requires=[
-        # These dependencies are not pure-python.
-        # In general, avoid adding dependencies that are not pure-python because they are not
-        # guaranteed to be installable by `pip install` on all platforms.
+        "torch",
+        "torchvision",
         "Pillow>=12.0.0",  # or use pillow-simd for better performance
         "matplotlib",  # TODO move it to optional after we add opencv visualization
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
