@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04@sha256:38e59267704b5d91ef63c7d8f613359c629fab0aead1283d59ca7821029e73bc
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
