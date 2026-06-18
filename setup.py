@@ -205,7 +205,7 @@ setup(
         ],
         # dev dependencies. Install them by `pip install 'detectron2[dev]'`
         "dev": [
-            "flake8==3.8.1",
+            "flake8==7.3.0",
             "isort==4.3.21",
             "flake8-bugbear",
             "flake8-comprehensions",
