@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04@sha256:a2e1e2360c85298ac47ec2543b406ab1e8cec42e31ee47e4d32140ebc82e1067
+FROM nvidia/cuda:12.9.2-cudnn-devel-ubuntu24.04@sha256:5a480db8cbf90098ca816d7e77f07ce5cb4c43353530b6a84915c2dd99c4e0b6
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
