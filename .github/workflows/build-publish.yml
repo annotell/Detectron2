@@ -45,7 +45,7 @@ jobs:
           ls -lh dist/
 
       - name: Setup auth
-        uses: annotell/gha-common/gcloud-auth@71733bdb14eb6b771c6b804536bfb305c44a3ca8 # v1.3.0
+        uses: annotell/gha-common/gcloud-auth@6fdf9a5904219697387a25036207a5407e648022 # v1.4.0
 
       - name: Install uv
         uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
