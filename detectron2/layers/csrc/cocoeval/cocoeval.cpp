@@ -194,8 +194,11 @@ std::vector<ImageEvaluation> EvaluateImages(
             image_category_ious[i][c],
             iou_thresholds,
             area_ranges[a],
-            &results_all
-                [c * num_area_ranges * num_images + a * num_images + i]);
+            &results_all[static_cast<size_t>(c) *
+                             static_cast<size_t>(num_area_ranges) *
+                             static_cast<size_t>(num_images) +
+                         a * static_cast<size_t>(num_images) +
+                         static_cast<size_t>(i)]);
       }
     }
   }
