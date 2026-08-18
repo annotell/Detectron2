@@ -159,7 +159,9 @@ std::vector<ImageEvaluation> EvaluateImages(
   std::vector<uint64_t> ground_truth_sorted_indices;
   std::vector<bool> ignores;
   std::vector<ImageEvaluation> results_all(
-      num_images * num_area_ranges * num_categories);
+      static_cast<std::vector<ImageEvaluation>::size_type>(num_images) *
+      static_cast<std::vector<ImageEvaluation>::size_type>(num_area_ranges) *
+      static_cast<std::vector<ImageEvaluation>::size_type>(num_categories));
 
   // Store results for each image, category, and area range combination. Results
   // for each IOU threshold are packed into the same ImageEvaluation object
