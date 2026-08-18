@@ -77,8 +77,11 @@ void MatchDetectionsToGroundTruth(
   std::vector<uint64_t>& detection_matches = results->detection_matches;
   std::vector<bool>& detection_ignores = results->detection_ignores;
   std::vector<bool>& ground_truth_ignores = results->ground_truth_ignores;
-  detection_matches.resize(num_iou_thresholds * num_detections, 0);
-  detection_ignores.resize(num_iou_thresholds * num_detections, false);
+  const std::size_t num_detection_slots =
+      static_cast<std::size_t>(num_iou_thresholds) *
+      static_cast<std::size_t>(num_detections);
+  detection_matches.resize(num_detection_slots, 0);
+  detection_ignores.resize(num_detection_slots, false);
   ground_truth_ignores.resize(num_ground_truth);
   for (auto g = 0; g < num_ground_truth; ++g) {
     ground_truth_ignores[g] = ignores[ground_truth_sorted_indices[g]];
